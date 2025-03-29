@@ -12,38 +12,40 @@
       role="combobox"
       :aria-expanded="dropdownOpen.toString()"
       :aria-owns="`vs${uid}__listbox`"
-      aria-label="Search for option"
+      :aria-label="ariaLabelCombobox"
       @mousedown="toggleDropdown($event)"
     >
       <div ref="selectedOptions" class="vs__selected-options">
-        <slot
-          v-for="(option, i) in selectedValue"
-          name="selected-option-container"
-          :option="normalizeOptionForSlot(option)"
-          :deselect="deselect"
-          :multiple="multiple"
-          :disabled="disabled"
-        >
-          <span :key="getOptionKey(option)" class="vs__selected">
-            <slot
-              name="selected-option"
-              v-bind="normalizeOptionForSlot(option)"
-            >
-              {{ getOptionLabel(option) }}
-            </slot>
-            <button
-              v-if="multiple"
-              :ref="(el) => (deselectButtons[i] = el)"
-              :disabled="disabled"
-              type="button"
-              class="vs__deselect"
-              :title="`Deselect ${getOptionLabel(option)}`"
-              :aria-label="`Deselect ${getOptionLabel(option)}`"
-              @click="deselect(option)"
-            >
-              <component :is="childComponents.Deselect" />
-            </button>
-          </span>
+        <slot name="selected-wrap">
+          <slot
+            v-for="(option, i) in selectedValue"
+            name="selected-option-container"
+            :option="normalizeOptionForSlot(option)"
+            :deselect="deselect"
+            :multiple="multiple"
+            :disabled="disabled"
+          >
+            <span :key="getOptionKey(option)" class="vs__selected">
+              <slot
+                name="selected-option"
+                v-bind="normalizeOptionForSlot(option)"
+              >
+                {{ getOptionLabel(option) }}
+              </slot>
+              <button
+                v-if="multiple"
+                :ref="(el) => (deselectButtons[i] = el)"
+                :disabled="disabled"
+                type="button"
+                class="vs__deselect"
+                :title="`${ariaLabelDeselect} ${getOptionLabel(option)}`"
+                :aria-label="`${ariaLabelDeselect} ${getOptionLabel(option)}`"
+                @click="deselect(option)"
+              >
+                <component :is="childComponents.Deselect" />
+              </button>
+            </span>
+          </slot>
         </slot>
 
         <slot name="search" v-bind="scope.search">
@@ -56,18 +58,23 @@
       </div>
 
       <div ref="actions" class="vs__actions">
-        <button
-          v-show="showClearButton"
-          ref="clearButton"
-          :disabled="disabled"
-          type="button"
-          class="vs__clear"
-          title="Clear Selected"
-          aria-label="Clear Selected"
-          @click="clearSelection"
+        <slot
+          name="clear-button"
+          v-bind="{ clearSelection, disabled, showClearButton }"
         >
-          <component :is="childComponents.Deselect" />
-        </button>
+          <button
+            v-show="showClearButton"
+            ref="clearButton"
+            :disabled="disabled"
+            type="button"
+            class="vs__clear"
+            :title="ariaLabelClear"
+            :aria-label="ariaLabelClear"
+            @click="clearSelection"
+          >
+            <component :is="childComponents.Deselect" />
+          </button>
+        </slot>
 
         <slot name="open-indicator" v-bind="scope.openIndicator">
           <component
@@ -91,6 +98,7 @@
         v-append-to-body
         class="vs__dropdown-menu"
         role="listbox"
+        :aria-multiselectable="multiple"
         tabindex="-1"
         @mousedown.prevent="onMousedown"
         @mouseup="onMouseUp"
@@ -109,7 +117,7 @@
             'vs__dropdown-option--highlight': index === typeAheadPointer,
             'vs__dropdown-option--disabled': !selectable(option),
           }"
-          :aria-selected="index === typeAheadPointer ? true : null"
+          :aria-selected="optionAriaSelected(option)"
           @mouseover="selectable(option) ? (typeAheadPointer = index) : null"
           @click.prevent.stop="selectable(option) ? select(option) : null"
         >
@@ -153,7 +161,7 @@ export default {
   directives: { appendToBody },
 
   mixins: [pointerScroll, typeAheadPointer, ajax],
-  
+
   compatConfig: {
     MODE: 3,
   },
@@ -686,6 +694,21 @@ export default {
     uid: {
       type: [String, Number],
       default: () => uniqueId(),
+    },
+
+    ariaLabelCombobox: {
+      type: String,
+      default: 'Search for option',
+    },
+
+    ariaLabelClear: {
+      type: String,
+      default: 'Clear selected',
+    },
+
+    ariaLabelDeselect: {
+      type: String,
+      default: 'Deselect',
     },
   },
 
@@ -1231,6 +1254,20 @@ export default {
       return this.optionList.some((_option) =>
         this.optionComparator(_option, option)
       )
+    },
+
+    /**
+     * Determine the `aria-selected` value
+     * of an option
+     *
+     * @param  {Object|String} option
+     * @return {null|string}
+     */
+    optionAriaSelected(option) {
+      if (!this.selectable(option)) {
+        return null
+      }
+      return String(this.isOptionSelected(option))
     },
 
     /**

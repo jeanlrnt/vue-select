@@ -31,6 +31,8 @@
     --vs-controls-color: var(--vs-colors--light);
     --vs-controls-size: 1;
     --vs-controls--deselect-text-shadow: 0 1px 0 #fff;
+    --vs-controls--deselect-margin: 4px;
+    --vs-controls--clear-margin: 8px;
 
     /* Selected */
     --vs-selected-bg: #f0f0f0;
@@ -51,6 +53,10 @@
     --vs-dropdown-option-bg: #000;
     --vs-dropdown-option-color: var(--vs-dropdown-color);
     --vs-dropdown-option-padding: 3px 20px;
+
+    /* Selected Option */
+    --vs-dropdown-option--selected-bg: #dddddd;
+    --vs-dropdown-option--selected-color: var(--vs-selected-color);
 
     /* Active State */
     --vs-dropdown-option--active-bg: #5897fb;
